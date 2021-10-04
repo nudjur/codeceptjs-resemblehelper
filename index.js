@@ -1,11 +1,11 @@
 const resemble = require("resemblejs");
-const fs = require("fs");
-const assert = require("assert");
-const mkdirp = require("mkdirp");
-const getDirName = require("path").dirname;
-const AWS = require("aws-sdk");
-const path = require("path");
-const sizeOf = require("image-size");
+const fs = require('fs');
+const assert = require('assert');
+const mkdirp = require('mkdirp');
+const getDirName = require('path').dirname;
+const AWS = require('aws-sdk');
+const path = require('path');
+const sizeOf = require('image-size');
 
 /**
  * Resemble.js helper class for CodeceptJS, this allows screen comparison
@@ -13,6 +13,7 @@ const sizeOf = require("image-size");
  */
 
 class ResembleHelper extends Helper {
+
   constructor(config) {
     super(config);
     this.baseFolder = this.resolvePath(config.baseFolder);
@@ -44,28 +45,21 @@ class ResembleHelper extends Helper {
     fs.access(baseImage, fs.constants.F_OK | fs.constants.R_OK, (err) => {
       if (err) {
         throw new Error(
-          `${baseImage} ${
-            err.code === "ENOENT"
-              ? "base image does not exist"
-              : "base image has an access error"
-          }`
-        );
+          `${baseImage} ${err.code === 'ENOENT' ? 'base image does not exist' :
+            'base image has an access error'}`);
       }
     });
 
     fs.access(actualImage, fs.constants.F_OK | fs.constants.R_OK, (err) => {
       if (err) {
         throw new Error(
-          `${actualImage} ${
-            err.code === "ENOENT"
-              ? "screenshot image does not exist"
-              : "screenshot image has an access error"
-          }`
-        );
+          `${actualImage} ${err.code === 'ENOENT' ? 'screenshot image does not exist' :
+            'screenshot image has an access error'}`);
       }
     });
 
     return new Promise((resolve, reject) => {
+
       if (!options.outputSettings) {
         options.outputSettings = {};
       }
@@ -85,11 +79,7 @@ class ResembleHelper extends Helper {
           if (!data.isSameDimensions) {
             let dimensions1 = sizeOf(baseImage);
             let dimensions2 = sizeOf(actualImage);
-            reject(
-              new Error(
-                `The base image is of ${dimensions1.height} X ${dimensions1.width} and actual image is of ${dimensions2.height} X ${dimensions2.width}. Please use images of same dimensions so as to avoid any unexpected results.`
-              )
-            );
+            reject(new Error(`The base image is of ${dimensions1.height} X ${dimensions1.width} and actual image is of ${dimensions2.height} X ${dimensions2.width}. Please use images of same dimensions so as to avoid any unexpected results.`));
           }
           resolve(data);
           if (data.misMatchPercentage >= tolerance) {
@@ -125,34 +115,28 @@ class ResembleHelper extends Helper {
    */
   async screenshotElement(selector, name) {
     const helper = this._getHelper();
-    if (this.helpers["Puppeteer"] || this.helpers["Playwright"]) {
+    if (this.helpers['Puppeteer'] || this.helpers['Playwright']) {
       await helper.waitForVisible(selector);
       const els = await helper._locate(selector);
-      if (!els.length)
-        throw new Error(`Element ${selector} couldn't be located`);
+      if (!els.length) throw new Error(`Element ${selector} couldn't be located`);
       const el = els[0];
 
-      await el.screenshot({ path: `${global.output_dir}/${name}.png` });
-    } else if (this.helpers["WebDriver"]) {
+      await el.screenshot({path: `${global.output_dir}/${name}.png`});
+    } else if (this.helpers['WebDriver']) {
       await helper.waitForVisible(selector);
       const els = await helper._locate(selector);
-      if (!els.length)
-        throw new Error(`Element ${selector} couldn't be located`);
+      if (!els.length) throw new Error(`Element ${selector} couldn't be located`);
       const el = els[0];
 
-      await el.saveScreenshot(this.screenshotFolder + name + ".png");
-    } else if (this.helpers["TestCafe"]) {
+      await el.saveScreenshot(this.screenshotFolder + name + '.png');
+    } else if (this.helpers['TestCafe']) {
       await helper.waitForVisible(selector);
       const els = await helper._locate(selector);
-      if (!(await els.count))
-        throw new Error(`Element ${selector} couldn't be located`);
-      const { t } = this.helpers["TestCafe"];
+      if (!await els.count) throw new Error(`Element ${selector} couldn't be located`);
+      const { t } = this.helpers['TestCafe'];
 
       await t.takeElementScreenshot(els, name);
-    } else
-      throw new Error(
-        "Method only works with Playwright, Puppeteer, WebDriver or TestCafe helpers."
-      );
+    } else throw new Error("Method only works with Playwright, Puppeteer, WebDriver or TestCafe helpers.");
   }
 
   /**
@@ -164,24 +148,12 @@ class ResembleHelper extends Helper {
    */
 
   async _addAttachment(baseImage, misMatch, options) {
-    const allure = codeceptjs.container.plugins("allure");
+    const allure = codeceptjs.container.plugins('allure');
 
     if (allure !== undefined && misMatch >= options.tolerance) {
-      allure.addAttachment(
-        "Base Image",
-        fs.readFileSync(this._getBaseImagePath(baseImage, options)),
-        "image/png"
-      );
-      allure.addAttachment(
-        "Screenshot Image",
-        fs.readFileSync(this._getActualImagePath(baseImage)),
-        "image/png"
-      );
-      allure.addAttachment(
-        "Diff Image",
-        fs.readFileSync(this._getDiffImagePath(baseImage)),
-        "image/png"
-      );
+      allure.addAttachment('Base Image', fs.readFileSync(this._getBaseImagePath(baseImage, options)), 'image/png');
+      allure.addAttachment('Screenshot Image', fs.readFileSync(this._getActualImagePath(baseImage)), 'image/png');
+      allure.addAttachment('Diff Image', fs.readFileSync(this._getDiffImagePath(baseImage)), 'image/png');
     }
   }
 
@@ -194,13 +166,11 @@ class ResembleHelper extends Helper {
    */
 
   async _addMochaContext(baseImage, misMatch, options) {
-    const mocha = this.helpers["Mochawesome"];
+    const mocha = this.helpers['Mochawesome'];
 
     if (mocha !== undefined && misMatch >= options.tolerance) {
       await mocha.addMochawesomeContext("Base Image");
-      await mocha.addMochawesomeContext(
-        this._getBaseImagePath(baseImage, options)
-      );
+      await mocha.addMochawesomeContext(this._getBaseImagePath(baseImage, options));
       await mocha.addMochawesomeContext("ScreenShot Image");
       await mocha.addMochawesomeContext(this._getActualImagePath(baseImage));
       await mocha.addMochawesomeContext("Diff Image");
@@ -220,47 +190,38 @@ class ResembleHelper extends Helper {
    * @returns {Promise<void>}
    */
 
-  async _upload(
-    accessKeyId,
-    secretAccessKey,
-    region,
-    bucketName,
-    baseImage,
-    options
-  ) {
+  async _upload(accessKeyId, secretAccessKey, region, bucketName, baseImage, options) {
     console.log("Starting Upload... ");
     const s3 = new AWS.S3({
       accessKeyId: accessKeyId,
       secretAccessKey: secretAccessKey,
-      region: region,
+      region: region
     });
     fs.readFile(this._getActualImagePath(baseImage), (err, data) => {
       if (err) throw err;
-      let base64data = new Buffer(data, "binary");
+      let base64data = new Buffer(data, 'binary');
       const params = {
         Bucket: bucketName,
         Key: `output/${baseImage}`,
-        Body: base64data,
+        Body: base64data
       };
       s3.upload(params, (uErr, uData) => {
         if (uErr) throw uErr;
-        console.log(
-          `Screenshot Image uploaded successfully at ${uData.Location}`
-        );
+        console.log(`Screenshot Image uploaded successfully at ${uData.Location}`);
       });
     });
     fs.readFile(this._getDiffImagePath(baseImage), (err, data) => {
       if (err) console.log("Diff image not generated");
       else {
-        let base64data = new Buffer(data, "binary");
+        let base64data = new Buffer(data, 'binary');
         const params = {
           Bucket: bucketName,
           Key: `diff/Diff_${baseImage}`,
-          Body: base64data,
+          Body: base64data
         };
         s3.upload(params, (uErr, uData) => {
           if (uErr) throw uErr;
-          console.log(`Diff Image uploaded successfully at ${uData.Location}`);
+          console.log(`Diff Image uploaded successfully at ${uData.Location}`)
         });
       }
     });
@@ -272,15 +233,15 @@ class ResembleHelper extends Helper {
       fs.readFile(this._getBaseImagePath(baseImage, options), (err, data) => {
         if (err) throw err;
         else {
-          let base64data = new Buffer(data, "binary");
+          let base64data = new Buffer(data, 'binary');
           const params = {
             Bucket: bucketName,
             Key: `base/${baseImageName}`,
-            Body: base64data,
+            Body: base64data
           };
           s3.upload(params, (uErr, uData) => {
             if (uErr) throw uErr;
-            console.log(`Base Image uploaded at ${uData.Location}`);
+            console.log(`Base Image uploaded at ${uData.Location}`)
           });
         }
       });
@@ -300,24 +261,17 @@ class ResembleHelper extends Helper {
    * @returns {Promise<void>}
    */
 
-  _download(
-    accessKeyId,
-    secretAccessKey,
-    region,
-    bucketName,
-    baseImage,
-    options
-  ) {
+  _download(accessKeyId, secretAccessKey, region, bucketName, baseImage, options) {
     console.log("Starting Download...");
     const baseImageName = this._getBaseImageName(baseImage, options);
     const s3 = new AWS.S3({
       accessKeyId: accessKeyId,
       secretAccessKey: secretAccessKey,
-      region: region,
+      region: region
     });
     const params = {
       Bucket: bucketName,
-      Key: `base/${baseImageName}`,
+      Key: `base/${baseImageName}`
     };
     return new Promise((resolve) => {
       s3.getObject(params, (err, data) => {
@@ -362,14 +316,7 @@ class ResembleHelper extends Helper {
     if (this._getPrepareBaseImage(options)) {
       await this._prepareBaseImage(baseImage, options);
     } else if (awsC !== undefined) {
-      await this._download(
-        awsC.accessKeyId,
-        awsC.secretAccessKey,
-        awsC.region,
-        awsC.bucketName,
-        baseImage,
-        options
-      );
+      await this._download(awsC.accessKeyId, awsC.secretAccessKey, awsC.region, awsC.bucketName, baseImage, options);
     }
 
     if (selector) {
@@ -379,31 +326,13 @@ class ResembleHelper extends Helper {
     this._addAttachment(baseImage, misMatch, options);
     this._addMochaContext(baseImage, misMatch, options);
     if (awsC !== undefined) {
-      await this._upload(
-        awsC.accessKeyId,
-        awsC.secretAccessKey,
-        awsC.region,
-        awsC.bucketName,
-        baseImage,
-        options
-      );
+      await this._upload(awsC.accessKeyId, awsC.secretAccessKey, awsC.region, awsC.bucketName, baseImage, options)
     }
 
-    this.debug(
-      "MisMatch Percentage Calculated is " +
-        misMatch +
-        " for baseline " +
-        baseImage
-    );
+    this.debug("MisMatch Percentage Calculated is " + misMatch + " for baseline " + baseImage);
 
     if (!options.skipFailure) {
-      assert(
-        misMatch <= options.tolerance,
-        "Screenshot does not match with the baseline " +
-          baseImage +
-          " when MissMatch Percentage is " +
-          misMatch
-      );
+      assert(misMatch <= options.tolerance, "Screenshot does not match with the baseline " + baseImage + " when MissMatch Percentage is " + misMatch);
     }
   }
 
@@ -414,28 +343,22 @@ class ResembleHelper extends Helper {
    * @param options
    */
   async _prepareBaseImage(screenShotImage, options) {
-    const baseImage = this._getBaseImagePath(screenShotImage, options);
-    const actualImage = this._getActualImagePath(screenShotImage);
+  	const baseImage = this._getBaseImagePath(screenShotImage, options);
+  	const actualImage = this._getActualImagePath(screenShotImage);
 
     await this._createDir(baseImage);
 
     fs.access(actualImage, fs.constants.F_OK | fs.constants.W_OK, (err) => {
       if (err) {
         throw new Error(
-          `${actualImage} ${
-            err.code === "ENOENT" ? "does not exist" : "is read-only"
-          }`
-        );
+          `${actualImage} ${err.code === 'ENOENT' ? 'does not exist' : 'is read-only'}`);
       }
     });
 
     fs.access(this.baseFolder, fs.constants.F_OK | fs.constants.W_OK, (err) => {
       if (err) {
         throw new Error(
-          `${this.baseFolder} ${
-            err.code === "ENOENT" ? "does not exist" : "is read-only"
-          }`
-        );
+          `${this.baseFolder} ${err.code === 'ENOENT' ? 'does not exist' : 'is read-only'}`);
       }
     });
 
@@ -463,35 +386,32 @@ class ResembleHelper extends Helper {
     await helper.waitForVisible(selector);
     const els = await helper._locate(selector);
 
-    if (this.helpers["TestCafe"]) {
-      if ((await els.count) != 1)
-        throw new Error(
-          `Element ${selector} couldn't be located or isn't unique on the page`
-        );
-    } else {
-      if (!els.length)
-        throw new Error(`Element ${selector} couldn't be located`);
+    if (this.helpers['TestCafe']) {
+      if (await els.count != 1) throw new Error(`Element ${selector} couldn't be located or isn't unique on the page`);
+    }
+    else {
+      if (!els.length) throw new Error(`Element ${selector} couldn't be located`);
     }
 
     let location, size;
 
-    if (this.helpers["Puppeteer"] || this.helpers["Playwright"]) {
+    if (this.helpers['Puppeteer'] || this.helpers['Playwright']) {
       const el = els[0];
       const box = await el.boundingBox();
       size = location = box;
     }
 
-    if (this.helpers["WebDriver"] || this.helpers["Appium"]) {
+    if (this.helpers['WebDriver'] || this.helpers['Appium']) {
       const el = els[0];
       location = await el.getLocation();
       size = await el.getSize();
     }
 
-    if (this.helpers["WebDriverIO"]) {
+    if (this.helpers['WebDriverIO']) {
       location = await helper.browser.getLocation(selector);
       size = await helper.browser.getElementSize(selector);
     }
-    if (this.helpers["TestCafe"]) {
+    if (this.helpers['TestCafe']) {
       return await els.boundingClientRect;
     }
 
@@ -505,39 +425,37 @@ class ResembleHelper extends Helper {
       left: location.x,
       top: location.y,
       right: right,
-      bottom: bottom,
+      bottom: bottom
     };
 
-    this.debugSection("Area", JSON.stringify(boundingBox));
+    this.debugSection('Area', JSON.stringify(boundingBox));
 
     return boundingBox;
   }
 
   _getHelper() {
-    if (this.helpers["Puppeteer"]) {
-      return this.helpers["Puppeteer"];
+    if (this.helpers['Puppeteer']) {
+      return this.helpers['Puppeteer'];
     }
 
-    if (this.helpers["WebDriver"]) {
-      return this.helpers["WebDriver"];
+    if (this.helpers['WebDriver']) {
+      return this.helpers['WebDriver'];
     }
-    if (this.helpers["Appium"]) {
-      return this.helpers["Appium"];
+    if (this.helpers['Appium']) {
+      return this.helpers['Appium'];
     }
-    if (this.helpers["WebDriverIO"]) {
-      return this.helpers["WebDriverIO"];
+    if (this.helpers['WebDriverIO']) {
+      return this.helpers['WebDriverIO'];
     }
-    if (this.helpers["TestCafe"]) {
-      return this.helpers["TestCafe"];
-    }
-
-    if (this.helpers["Playwright"]) {
-      return this.helpers["Playwright"];
+    if (this.helpers['TestCafe']) {
+      return this.helpers['TestCafe'];
     }
 
-    throw new Error(
-      "No matching helper found. Supported helpers: Playwright/WebDriver/Appium/Puppeteer/TestCafe"
-    );
+    if (this.helpers['Playwright']) {
+      return this.helpers['Playwright'];
+    }
+
+    throw new Error('No matching helper found. Supported helpers: Playwright/WebDriver/Appium/Puppeteer/TestCafe');
   }
 
   /**
@@ -547,7 +465,7 @@ class ResembleHelper extends Helper {
    * @returns {string}
    */
   _getBaseImageName(image, options) {
-    return options.compareWithImage ? options.compareWithImage : image;
+  	return (options.compareWithImage ? options.compareWithImage : image);
   }
 
   /**
@@ -566,7 +484,7 @@ class ResembleHelper extends Helper {
    * @returns {string}
    */
   _getActualImagePath(image) {
-    return this.screenshotFolder + image;
+  	return this.screenshotFolder + image;
   }
 
   /**
@@ -575,8 +493,8 @@ class ResembleHelper extends Helper {
    * @returns {string}
    */
   _getDiffImagePath(image) {
-    const diffImage = "Diff_" + image.split(".")[0] + ".png";
-    return this.diffFolder + diffImage;
+  	const diffImage = "Diff_" + image.split(".")[0] + ".png";
+  	return this.diffFolder + diffImage;
   }
 
   /**
@@ -585,9 +503,9 @@ class ResembleHelper extends Helper {
    * @returns {boolean}
    */
   _getPrepareBaseImage(options) {
-    if ("undefined" !== typeof options.prepareBaseImage) {
+    if ('undefined' !== typeof options.prepareBaseImage) {
       // Cast to bool with `!!` for backwards compatibility
-      return !!options.prepareBaseImage;
+      return !! options.prepareBaseImage;
     } else {
       // Compare with `true` for backwards compatibility
       return true === this.prepareBaseImage;
