@@ -1,26 +1,26 @@
-const RPClient = require('@reportportal/client-javascript');
-const fs = require('fs');
-const path = require('path');
-const debug = require('debug')('codeceptjs:reportportal');
+const RPClient = require("@reportportal/client-javascript");
+const fs = require("fs");
+const path = require("path");
+const debug = require("debug")("codeceptjs:reportportal");
 const { event, recorder, output, container } = codeceptjs;
 
 const helpers = container.helpers();
 let helper;
 
-const rp_FAILED = 'FAILED';
-const rp_PASSED = 'PASSED';
-const rp_SUITE = 'SUITE';
-const rp_TEST = 'TEST';
-const rp_STEP = 'STEP';
+const rp_FAILED = "FAILED";
+const rp_PASSED = "PASSED";
+const rp_SUITE = "SUITE";
+const rp_TEST = "TEST";
+const rp_STEP = "STEP";
 
 const screenshotHelpers = [
-  'WebDriver',
-  'Protractor',
-  'Appium',
-  'Nightmare',
-  'Puppeteer',
-  'TestCafe',
-  'Playwright',
+  "WebDriver",
+  "Protractor",
+  "Appium",
+  "Nightmare",
+  "Puppeteer",
+  "TestCafe",
+  "Playwright",
 ];
 
 for (const helperName of screenshotHelpers) {
@@ -30,25 +30,27 @@ for (const helperName of screenshotHelpers) {
 }
 
 const defaultConfig = {
-  token: '',
-  endpoint: '',
-  projectName: '',
-  launchName: 'codeceptjs tests',
-  launchDescription: '',
+  token: "",
+  endpoint: "",
+  projectName: "",
+  launchName: "codeceptjs tests",
+  launchDescription: "",
   attributes: [],
   debug: false,
   rerun: undefined,
-  enabled: false
+  enabled: false,
 };
 
-const requiredFields = ['projectName', 'token', 'endpoint'];
-
+const requiredFields = ["projectName", "token", "endpoint"];
 
 module.exports = (config) => {
   config = Object.assign(defaultConfig, config);
 
   for (let field of requiredFields) {
-    if (!config[field]) throw new Error(`ReportPortal config is invalid. Key ${field} is missing in config.\nRequired fields: ${requiredFields} `)
+    if (!config[field])
+      throw new Error(
+        `ReportPortal config is invalid. Key ${field} is missing in config.\nRequired fields: ${requiredFields} `
+      );
   }
 
   let reportUrl;
@@ -68,27 +70,27 @@ module.exports = (config) => {
     if (obj) rpClient.sendLog(obj.tempId, data, file);
   }
 
-    function sleep(ms, value) {
-    return new Promise(resolve => setTimeout(resolve, ms, value));
+  function sleep(ms, value) {
+    return new Promise((resolve) => setTimeout(resolve, ms, value));
   }
 
   event.dispatcher.on(event.all.before, async () => {
     launchObj = startLaunch();
     let maxTries = 10;
-    for (let count=0; count<maxTries; ++count){
-        if (count > 0) {
-            await sleep(10000);
-        }
-        try {
-            await launchObj.promise;
-            return;
-        }
-        catch (err) {
-            output.error(`❌ Unable to connect ReportPortal, retrying...`);
-            output.error(err)
-        }
+    for (let count = 0; count < maxTries; ++count) {
+      if (count > 0) await sleep(10000);
+
+      try {
+        await launchObj.promise;
+        return;
+      } catch (err) {
+        output.error(`❌ Unable to connect ReportPortal, retrying...`);
+        output.error(err);
+      }
     }
-    output.print(`📋 Writing results to ReportPortal: ${config.projectName} > ${config.endpoint}`);
+    output.print(
+      `📋 Writing results to ReportPortal: ${config.projectName} > ${config.endpoint}`
+    );
 
     const outputLog = output.log;
     const outputDebug = output.debug;
@@ -96,19 +98,18 @@ module.exports = (config) => {
 
     output.log = (message) => {
       outputLog(message);
-      logCurrent({ level: 'trace', message });
-    }
+      logCurrent({ level: "trace", message });
+    };
 
     output.debug = (message) => {
       outputDebug(message);
-      logCurrent({ level: 'debug', message });
-    }
+      logCurrent({ level: "debug", message });
+    };
 
     output.error = (message) => {
       outputError(message);
-      logCurrent({ level: 'error', message });
-    }
-
+      logCurrent({ level: "error", message });
+    };
   });
 
   event.dispatcher.on(event.suite.before, (suite) => {
@@ -128,15 +129,19 @@ module.exports = (config) => {
       test.tempId = testObj.tempId;
       failedStep = null;
       debug(`${testObj.tempId}: The testId '${test.title}' is started.`);
-    })
+    });
   });
 
   event.dispatcher.on(event.step.before, (step) => {
     recorder.add(async () => {
       const parent = await startMetaSteps(step);
-      stepObj = startTestItem(step.toString().slice(0, 300), rp_STEP, parent.tempId);
+      stepObj = startTestItem(
+        step.toString().slice(0, 300),
+        rp_STEP,
+        parent.tempId
+      );
       step.tempId = stepObj.tempId;
-    })
+    });
   });
 
   event.dispatcher.on(event.step.after, (step) => {
@@ -145,14 +150,14 @@ module.exports = (config) => {
 
   event.dispatcher.on(event.step.failed, (step) => {
     for (const metaStep of currentMetaSteps) {
-      if (metaStep) metaStep.status = 'failed';
+      if (metaStep) metaStep.status = "failed";
     }
     if (step && step.tempId) failedStep = Object.assign({}, step);
   });
 
   event.dispatcher.on(event.step.passed, (step, err) => {
     for (const metaStep of currentMetaSteps) {
-      metaStep.status = 'passed';
+      metaStep.status = "passed";
     }
     failedStep = null;
   });
@@ -168,12 +173,15 @@ module.exports = (config) => {
 
       const screenshot = await attachScreenshot();
 
-      resp = await rpClient.sendLog(step.tempId, {
-        level: 'ERROR',
-        message: `${err.stack}`,
-        time: step.startTime,
-      }, screenshot).promise;
-
+      resp = await rpClient.sendLog(
+        step.tempId,
+        {
+          level: "ERROR",
+          message: `${err.stack}`,
+          time: step.startTime,
+        },
+        screenshot
+      ).promise;
     }
 
     if (!test.tempId) return;
@@ -182,7 +190,7 @@ module.exports = (config) => {
 
     if (!failedStep) {
       await rpClient.sendLog(test.tempId, {
-        level: 'ERROR',
+        level: "ERROR",
         message: `${err.stack}`,
       }).promise;
     }
@@ -206,7 +214,7 @@ module.exports = (config) => {
     recorder.add(async () => {
       debug(`closing ${currentMetaSteps.length} metasteps for failed test`);
       if (failedStep) await finishStep(failedStep);
-      await Promise.all(currentMetaSteps.reverse().map(m => finishStep(m)));
+      await Promise.all(currentMetaSteps.reverse().map((m) => finishStep(m)));
       stepObj = null;
       testObj = null;
     });
@@ -217,7 +225,7 @@ module.exports = (config) => {
       debug(`${suite.tempId}: Suite '${suite.title}' finished ${suiteStatus}.`);
       return rpClient.finishTestItem(suite.tempId, {
         endTime: suite.endTime || rpClient.helpers.now(),
-        status: rpStatus(suiteStatus)
+        status: rpStatus(suiteStatus),
       });
     });
   });
@@ -225,20 +233,23 @@ module.exports = (config) => {
   function startTestItem(testTitle, method, parentId = null) {
     try {
       const hasStats = method !== rp_STEP;
-      return rpClient.startTestItem({
-        name: testTitle,
-        type: method,
-        hasStats,
-      }, launchObj.tempId, parentId);
+      return rpClient.startTestItem(
+        {
+          name: testTitle,
+          type: method,
+          hasStats,
+        },
+        launchObj.tempId,
+        parentId
+      );
     } catch (error) {
       output.err(error);
     }
-
   }
 
   event.dispatcher.on(event.all.result, async () => {
     // await recorder.promise;
-    debug('Finishing launch...');
+    debug("Finishing launch...");
     if (suiteObj) {
       rpClient.finishTestItem(suiteObj.tempId, {
         status: suiteStatus,
@@ -279,15 +290,15 @@ module.exports = (config) => {
     fs.unlinkSync(path.join(global.output_dir, fileName));
 
     return {
-      name: 'failed.png',
-      type: 'image/png',
+      name: "failed.png",
+      type: "image/png",
       content,
-    }
+    };
   }
 
   async function finishLaunch() {
     try {
-      debug(`${launchObj.tempId} Finished launch: ${launchStatus}`)
+      debug(`${launchObj.tempId} Finished launch: ${launchStatus}`);
       const launch = rpClient.finishLaunch(launchObj.tempId, {
         status: launchStatus,
       });
@@ -296,7 +307,7 @@ module.exports = (config) => {
 
       reportUrl = response.link;
       output.print(` 📋 Report #${response.number} saved ➡`, response.link);
-      event.emit('reportportal.result', response);
+      event.emit("reportportal.result", response);
     } catch (error) {
       console.log(error);
       debug(error);
@@ -308,7 +319,7 @@ module.exports = (config) => {
     const metaSteps = metaStepsToArray(step.metaStep);
 
     // close current metasteps
-    for (let j = currentMetaSteps.length-1; j >= metaSteps.length; j--) {
+    for (let j = currentMetaSteps.length - 1; j >= metaSteps.length; j--) {
       await finishStep(currentMetaSteps[j]);
     }
 
@@ -319,17 +330,25 @@ module.exports = (config) => {
         continue;
       }
       // close metasteps other than current
-      for (let j = currentMetaSteps.length-1; j >= i; j--) {
+      for (let j = currentMetaSteps.length - 1; j >= i; j--) {
         await finishStep(currentMetaSteps[j]);
         delete currentMetaSteps[j];
       }
 
-      metaStepObj = currentMetaSteps[i-1] || metaStepObj;
+      metaStepObj = currentMetaSteps[i - 1] || metaStepObj;
 
       const isNested = !!metaStepObj.tempId;
-      metaStepObj = startTestItem(metaStep.toString(), rp_STEP, metaStepObj.tempId || testObj.tempId);
+      metaStepObj = startTestItem(
+        metaStep.toString(),
+        rp_STEP,
+        metaStepObj.tempId || testObj.tempId
+      );
       metaStep.tempId = metaStepObj.tempId;
-      debug(`${metaStep.tempId}: The stepId '${metaStep.toString()}' is started. Nested: ${isNested}`);
+      debug(
+        `${
+          metaStep.tempId
+        }: The stepId '${metaStep.toString()}' is started. Nested: ${isNested}`
+      );
     }
 
     currentMetaSteps = metaSteps;
@@ -339,7 +358,9 @@ module.exports = (config) => {
   function finishStep(step) {
     if (!step) return;
     if (!step.tempId) {
-      debug(`WARNING: '${step.toString()}' step can't be closed, it has no tempId`);
+      debug(
+        `WARNING: '${step.toString()}' step can't be closed, it has no tempId`
+      );
       return;
     }
     debug(`Finishing '${step.toString()}' step`);
@@ -357,7 +378,7 @@ module.exports = (config) => {
 
 function metaStepsToArray(step) {
   let metaSteps = [];
-  iterateMetaSteps(step, metaStep => metaSteps.push(metaStep));
+  iterateMetaSteps(step, (metaStep) => metaSteps.push(metaStep));
   return metaSteps;
 }
 
@@ -366,19 +387,18 @@ function iterateMetaSteps(step, fn) {
   if (step) fn(step);
 }
 
-
 const isEqualMetaStep = (metastep1, metastep2) => {
   if (!metastep1 && !metastep2) return true;
   if (!metastep1 || !metastep2) return false;
-  return metastep1.actor === metastep2.actor
-    && metastep1.name === metastep2.name
-    && metastep1.args.join(',') === metastep2.args.join(',');
+  return (
+    metastep1.actor === metastep2.actor &&
+    metastep1.name === metastep2.name &&
+    metastep1.args.join(",") === metastep2.args.join(",")
+  );
 };
 
-
 function rpStatus(status) {
-  if (status === 'success') return rp_PASSED;
-  if (status === 'failed') return rp_FAILED;
+  if (status === "success") return rp_PASSED;
+  if (status === "failed") return rp_FAILED;
   return status;
 }
-
