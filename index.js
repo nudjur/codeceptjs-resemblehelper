@@ -40,6 +40,7 @@ class ResembleHelper extends Helper {
     const baseImage = this._getBaseImagePath(image, options);
     const actualImage = this._getActualImagePath(image);
     const diffImage = this._getDiffImagePath(image);
+    this.diffImagePath = diffImage;
 
     // check whether the base and the screenshot images are present.
     fs.access(baseImage, fs.constants.F_OK | fs.constants.R_OK, (err) => {
